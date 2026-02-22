@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portafolio TCA La Paz</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div class="header-accent"></div>
+  <div class="header-body">
+    <div class="diamonds"><div class="dia g"></div><div class="dia p"></div><div class="dia g"></div></div>
+    <h1>THE CONSULTING ACADEMY</h1>
+    <span class="city">La Paz, Bolivia</span>
+    <span class="portfolio-label">Portafolio de Proyectos</span>
+  </div>
+</header>
+
+<div class="top-nav">
+  <button class="nav-btn active" onclick="showView('projects',this)"><span class="ico">📁</span>Proyectos</button>
+  <button class="nav-btn" onclick="showView('dashboard',this)"><span class="ico">📊</span>Dashboard</button>
+  <button class="nav-btn" onclick="showView('members',this)"><span class="ico">👥</span>Miembros</button>
+</div>
+
+<!-- ══ VIEW: PROJECTS ══ -->
+<div id="view-projects" class="view active">
+  <div class="controls">
+    <label>🔍</label>
+    <input type="text" id="searchInput" placeholder="Buscar nombre, cliente, líder, miembro…">
+    <label>Tipo:</label>
+    <select id="typeFilter">
+      <option value="all">Todos</option>
+      <option>De paga</option><option>Pro bono</option><option>Interno</option><option>Training Project</option>
+    </select>
+    <label>Área:</label>
+    <select id="areaFilter">
+      <option value="all">Todas</option>
+      <option>Corporate Relations</option><option>Marketing</option><option>IT</option>
+      <option>Finanzas</option><option>Educativo</option><option>Recursos Humanos</option>
+    </select>
+    <label>Estado:</label>
+    <select id="statusFilter">
+      <option value="all">Todos</option>
+      <option>Terminado</option><option>En pausa</option>
+    </select>
+    <label>Semestre:</label>
+    <select id="semFilter"><option value="all">Todos</option></select>
+    <button class="btn-add" onclick="openAddModal()">+ Agregar Proyecto</button>
+  </div>
+
+  <div id="error-proj" class="error-banner">⚠️ <span id="error-proj-msg"></span></div>
+  <div class="projects-grid" id="projectsGrid">
+    <div class="loading"><div class="loading-spinner"></div><br>Cargando proyectos…</div>
+  </div>
+</div>
+
+<!-- ══ VIEW: DASHBOARD ══ -->
+<div id="view-dashboard" class="view">
+  <div class="dashboard-wrap" id="dashboardContent"><div class="loading"><div class="loading-spinner"></div><br>Cargando dashboard…</div></div>
+</div>
+
+<!-- ══ VIEW: MEMBERS ══ -->
+<div id="view-members" class="view">
+  <div class="controls">
+    <label>🔍</label>
+    <input type="text" id="memberSearch" placeholder="Buscar nombre, universidad, carrera…">
+    <label>Semestre:</label>
+    <select id="memberSemFilter"><option value="all">Todos</option></select>
+    <label>Estado:</label>
+    <select id="memberStatusFilter">
+      <option value="all">Todos</option>
+      <option value="active">Activos</option>
+      <option value="alumni">Alumni</option>
+    </select>
+    <button class="btn-add" onclick="openAddMemberModal()">+ Agregar Miembro</button>
+  </div>
+  <div id="error-mem" class="error-banner">⚠️ <span id="error-mem-msg"></span></div>
+  <div class="members-grid" id="membersGrid">
+    <div class="loading"><div class="loading-spinner"></div><br>Cargando miembros…</div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<!-- ══ MODAL: PROJECT DETAIL ══ -->
+<div id="detailModal" class="modal">
+  <div class="modal-box">
+    <span class="modal-close" onclick="closeModal('detailModal')">&times;</span>
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+<!-- ══ MODAL: EDIT PROJECT ══ -->
+<div id="editModal" class="modal fmodal">
+  <div class="modal-box">
+    <span class="modal-close" onclick="closeModal('editModal')">&times;</span>
+    <h2>✏️ Editar Proyecto</h2>
+    <div class="pw-notice">🔒 Requiere contraseña de administrador TCA.</div>
+    <div class="fgroup"><label>Contraseña *</label><input type="password" id="editPw" placeholder="Contraseña…"></div>
+    <button class="btn-submit" onclick="unlockEdit()">Desbloquear</button>
+    <div id="editFormWrap" style="display:none;margin-top:16px"><hr class="sep"><form id="editProjectForm"></form></div>
+  </div>
+</div>
+
+<!-- ══ MODAL: ADD PROJECT ══ -->
+<div id="addModal" class="modal fmodal">
+  <div class="modal-box">
+    <span class="modal-close" onclick="closeModal('addModal')">&times;</span>
+    <h2>➕ Agregar Nuevo Proyecto</h2>
+    <form id="addProjectForm">
+      <div class="frow">
+        <div class="fgroup"><label>Nombre *</label><input type="text" id="a-name" required></div>
+        <div class="fgroup"><label>Tipo *</label>
+          <select id="a-type" required>
+            <option value="">Seleccionar…</option>
+            <option>De paga</option><option>Pro bono</option><option>Interno</option><option>Training Project</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fgroup"><label>Estado</label>
+          <select id="a-status"><option>Terminado</option><option>En pausa</option></select>
+        </div>
+        <div class="fgroup"><label>Semestre</label><input type="text" id="a-semester" placeholder="Ej: 1_2025"></div>
+      </div>
+      <div class="frow">
+        <div class="fgroup"><label>Líder *</label><input type="text" id="a-leader" required></div>
+        <div class="fgroup"><label>Cliente *</label><input type="text" id="a-client" required></div>
+      </div>
+      <div class="frow">
+        <div class="fgroup"><label>Tipo de cliente</label>
+          <select id="a-clienttype">
+            <option value="">Sin clasificar</option>
+            <option value="Empresa">🏢 Empresa</option>
+            <option value="ONG">🤝 ONG</option>
+            <option value="Institución">🏛️ Institución</option>
+            <option value="TCA">🔵 TCA</option>
+          </select>
+        </div>
+        <div class="fgroup"><label>Duración</label><input type="text" id="a-duration" placeholder="Ej: 3 semanas"></div>
+      </div>
+      <div class="fgroup"><label>Áreas</label>
+        <div class="areas-cb" id="a-areas">
+          <label class="acbl" onclick="tgA(this)"><input type="checkbox" value="Corporate Relations">Corporate Relations</label>
+          <label class="acbl" onclick="tgA(this)"><input type="checkbox" value="Marketing">Marketing</label>
+          <label class="acbl" onclick="tgA(this)"><input type="checkbox" value="IT">IT</label>
+          <label class="acbl" onclick="tgA(this)"><input type="checkbox" value="Finanzas">Finanzas</label>
+          <label class="acbl" onclick="tgA(this)"><input type="checkbox" value="Educativo">Educativo</label>
+          <label class="acbl" onclick="tgA(this)"><input type="checkbox" value="Recursos Humanos">Recursos Humanos</label>
+        </div>
+      </div>
+      <div class="fgroup"><label>Miembros del equipo</label>
+        <div style="border:2px solid var(--gl);border-radius:7px;padding:9px">
+          <div class="madd-row">
+            <div class="ac-wrap" style="flex:1;position:relative">
+              <input type="text" id="a-mname" placeholder="Nombre del miembro…" autocomplete="off" oninput="showAC('a-mname','a-ac')">
+              <div class="ac-list" id="a-ac" style="display:none"></div>
+            </div>
+            <select id="a-mrole"><option>Miembro</option><option>Líder</option><option>Co-líder</option></select>
+            <button type="button" class="btn-sm" onclick="addMember('a-mname','a-mrole','a-mlist','add')">+</button>
+          </div>
+          <div id="a-mlist"></div>
+        </div>
+      </div>
+      <div class="fgroup"><label>Descripción corta</label><textarea id="a-desc"></textarea></div>
+      <div class="fgroup"><label>Problema inicial</label><textarea id="a-prob"></textarea></div>
+      <div class="fgroup"><label>Nuestra solución</label><textarea id="a-sol"></textarea></div>
+      <div class="fgroup"><label>💬 Feedback del cliente</label><textarea id="a-fb"></textarea></div>
+      <div class="fgroup">
+        <label>🔗 Constancia / URL</label>
+        <input type="text" id="a-link" placeholder="https://… o nombre del documento">
+        <div class="fhint">URLs con http:// se muestran como botón. Múltiples links separados con punto y coma (;)</div>
+      </div>
+      <button type="submit" class="btn-submit">Guardar Proyecto</button>
+    </form>
+  </div>
+</div>
+
+<!-- ══ MODAL: MEMBER PROFILE ══ -->
+<div id="memberModal" class="modal">
+  <div class="modal-box">
+    <span class="modal-close" onclick="closeModal('memberModal')">&times;</span>
+    <div id="memberContent"></div>
+    <div style="margin-top:16px;text-align:right">
+      <button class="btn-sm" onclick="openEditMember()">✏️ Editar perfil (contraseña)</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: EDIT MEMBER ══ -->
+<div id="editMemberModal" class="modal fmodal">
+  <div class="modal-box">
+    <span class="modal-close" onclick="closeModal('editMemberModal')">&times;</span>
+    <h2>✏️ Editar Perfil de Miembro</h2>
+    <div class="pw-notice">🔒 Requiere contraseña de administrador TCA.</div>
+    <div class="fgroup"><label>Contraseña *</label><input type="password" id="mEditPw" placeholder="Contraseña…"></div>
+    <button class="btn-submit" onclick="unlockMemberEdit()">Desbloquear</button>
+    <div id="memberEditFormWrap" style="display:none;margin-top:16px"><hr class="sep"><form id="memberEditForm"></form></div>
+  </div>
+</div>
+
+<!-- ══ MODAL: ADD MEMBER ══ -->
+<div id="addMemberModal" class="modal fmodal">
+  <div class="modal-box">
+    <span class="modal-close" onclick="closeModal('addMemberModal')">&times;</span>
+    <h2>➕ Agregar Nuevo Miembro</h2>
+    <form id="addMemberForm">
+      <div class="frow">
+        <div class="fgroup"><label>Nombre(s) *</label><input type="text" id="nm-nombre" required></div>
+        <div class="fgroup"><label>Apellido(s) *</label><input type="text" id="nm-apellido" required></div>
+      </div>
+      <div class="frow">
+        <div class="fgroup"><label>Universidad *</label><input type="text" id="nm-uni" required placeholder="UMSA, UCB, UPB…"></div>
+        <div class="fgroup"><label>Carrera</label><input type="text" id="nm-career" placeholder="Administración, Ingeniería…"></div>
+      </div>
+      <div class="frow">
+        <div class="fgroup"><label>Semestre de ingreso *</label><input type="text" id="nm-semester" required placeholder="Ej: 1_2025"></div>
+        <div class="fgroup"><label>Estado</label>
+          <select id="nm-status"><option value="active">Activo</option><option value="alumni">Alumni</option></select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fgroup"><label>Correo</label><input type="email" id="nm-correo"></div>
+        <div class="fgroup"><label>Celular</label><input type="text" id="nm-celular"></div>
+      </div>
+      <div class="fgroup"><label>LinkedIn URL</label><input type="url" id="nm-linkedin" placeholder="https://linkedin.com/in/…"></div>
+      <div class="fgroup"><label>Foto (URL)</label><input type="url" id="nm-photo" placeholder="https://…"></div>
+      <div class="fgroup"><label>Bio / A qué se dedica</label><textarea id="nm-bio"></textarea></div>
+      <div class="fgroup">
+        <label>Experiencia</label>
+        <textarea id="nm-exp-desc" placeholder="Describe tu experiencia…" style="min-height:80px"></textarea>
+      </div>
+      <button type="submit" class="btn-submit">Guardar Miembro</button>
+    </form>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// SUPABASE CONFIG
+// ══════════════════════════════════════
+const SUPABASE_URL  = 'https://lokmsysfdvbrqlpamoha.supabase.co';
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxva21zeXNmZHZicnFscGFtb2hhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MTM4OTMsImV4cCI6MjA4NzI4OTg5M30.knVYC7sG1ocgJPZB07pyggPBpoHlzMm14XjoY_vD-JU';
+
+async function sbFetch(path, options = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': options.prefer || 'return=representation',
+      ...options.headers
+    },
+    ...options
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : [];
+}
+
+// ══════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════
+const TCA_PW = 'tcalapaz';
+const AREAS_ALL = ['Corporate Relations','Marketing','IT','Finanzas','Educativo','Recursos Humanos'];
+
+// ══════════════════════════════════════
+// STATE
+// ══════════════════════════════════════
+let allProjects = [];
+let allMembers  = [];
+let addTempMembers = [];
+let editTempMembers = [];
+let addNmExp = [];
+let meEditExp = [];
+let currentEditIdx  = null;
+let currentMemberIdx = null;
+let currentProjectId = null;
+let currentMemberId  = null;
+
+// ══════════════════════════════════════
+// DB HELPERS
+// ══════════════════════════════════════
+
+/* PROJECTS */
+async function loadProjects() {
+  const rows = await sbFetch('proyectos?select=*&order=name.asc');
+  // Map DB snake_case → camelCase used in UI
+  return rows.map(r => ({
+    _id: r.id,
+    name: r.name,
+    type: r.type,
+    status: r.status,
+    semester: r.semester || '',
+    leader: r.leader || '',
+    client: r.client || '',
+    clientType: r.client_type || '',
+    duration: r.duration || '',
+    areas: r.areas || [],
+    members: r.members || [],
+    shortDesc: r.short_desc || '',
+    problem: r.problem || '',
+    solution: r.solution || '',
+    feedback: r.feedback || null,
+    link: r.link || null
+  }));
+}
+
+async function insertProject(p) {
+  return sbFetch('proyectos', {
+    method: 'POST',
+    body: JSON.stringify(projectToRow(p))
+  });
+}
+
+async function updateProject(id, p) {
+  return sbFetch(`proyectos?id=eq.${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(projectToRow(p))
+  });
+}
+
+async function deleteProjectDB(id) {
+  return sbFetch(`proyectos?id=eq.${id}`, { method: 'DELETE', prefer: 'return=minimal' });
+}
+
+function projectToRow(p) {
+  return {
+    name: p.name, type: p.type, status: p.status,
+    semester: p.semester || null, leader: p.leader || null,
+    client: p.client || null, client_type: p.clientType || null,
+    duration: p.duration || null, areas: p.areas || [],
+    members: p.members || [], short_desc: p.shortDesc || null,
+    problem: p.problem || null, solution: p.solution || null,
+    feedback: p.feedback || null, link: p.link || null
+  };
+}
+
+/* MEMBERS */
+async function loadMembers() {
+  const rows = await sbFetch('miembros?select=*&order=apellido.asc,nombre.asc');
+  return rows.map(r => ({
+    _id: r.id,
+    id: r.id,
+    semester: r.semester || '',
+    nombre: r.nombre,
+    apellido: r.apellido,
+    correo: r.correo || '',
+    celular: r.celular || '',
+    universidad: r.universidad || '',
+    career: r.career || '',
+    photo: r.photo || null,
+    linkedin: r.linkedin || null,
+    bio: r.bio || null,
+    experience: r.experience || [],
+    interests: r.interests || [],
+    memberStatus: r.member_status || 'active'
+  }));
+}
+
+async function insertMember(m) {
+  return sbFetch('miembros', {
+    method: 'POST',
+    body: JSON.stringify(memberToRow(m))
+  });
+}
+
+async function updateMember(id, m) {
+  return sbFetch(`miembros?id=eq.${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(memberToRow(m))
+  });
+}
+
+async function deleteMemberDB(id) {
+  return sbFetch(`miembros?id=eq.${id}`, { method: 'DELETE', prefer: 'return=minimal' });
+}
+
+function memberToRow(m) {
+  return {
+    semester: m.semester || null,
+    nombre: m.nombre, apellido: m.apellido,
+    correo: m.correo || null, celular: m.celular || null,
+    universidad: m.universidad || null, career: m.career || null,
+    photo: m.photo || null, linkedin: m.linkedin || null,
+    bio: m.bio || null, experience: m.experience || [],
+    interests: m.interests || [],
+    member_status: m.memberStatus || 'active'
+  };
+}
+
+// ══════════════════════════════════════
+// VIEWS
+// ══════════════════════════════════════
+function showView(name, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'members') renderMembers();
+}
+
+// ══════════════════════════════════════
+// SEM FILTERS
+// ══════════════════════════════════════
+function populateSemFilters() {
+  const projSems = [...new Set(allProjects.map(p => p.semester || '').filter(Boolean))].sort();
+  const memSems  = [...new Set(allMembers.map(m => m.semester || '').filter(Boolean))].sort();
+  const el1 = document.getElementById('semFilter');
+  const el2 = document.getElementById('memberSemFilter');
+  if (el1) el1.innerHTML = '<option value="all">Todos</option>' + projSems.map(s => `<option>${s}</option>`).join('');
+  if (el2) el2.innerHTML = '<option value="all">Todos</option>' + memSems.map(s => `<option>${s}</option>`).join('');
+}
+
+// ══════════════════════════════════════
+// TYPE / STATUS HELPERS
+// ══════════════════════════════════════
+function typeClass(t) {
+  return {'De paga':'paga','Interno':'interno','Pro bono':'probono','Training Project':'trainingproject'}[t] || 'interno';
+}
+function statusClass(s) { return {'Terminado':'terminado','En pausa':'pausa'}[s] || 'terminado'; }
+function statusLabel(s) { return {'Terminado':'✅ Terminado','En pausa':'⏸️ En pausa'}[s] || s; }
+function statusColor(s) { return {'Terminado':'#1a7a4a','En pausa':'#b45309'}[s] || '#5a5a6e'; }
+
+function renderLinks(linkStr) {
+  if (!linkStr) return '<span class="no-fb">Sin constancia registrada.</span>';
+  return linkStr.split(';').map(p => p.trim()).filter(Boolean).map(p => {
+    if (p.startsWith('http://') || p.startsWith('https://'))
+      return `<a href="${p}" target="_blank" rel="noopener" class="link-btn">🔗 Ver enlace</a>`;
+    return `<span class="link-plain">📄 ${p}</span><br>`;
+  }).join(' ');
+}
+
+// ══════════════════════════════════════
+// RENDER PROJECTS — sorted alphabetically
+// ══════════════════════════════════════
+function renderProjects() {
+  const filtered = filterProjects().sort((a,b) => a.name.localeCompare(b.name, 'es'));
+  const grid = document.getElementById('projectsGrid');
+  if (!filtered.length) { grid.innerHTML = '<div class="no-results"><h3>No se encontraron proyectos</h3></div>'; return; }
+  grid.innerHTML = filtered.map(p => {
+    const idx = allProjects.indexOf(p);
+    const tc = typeClass(p.type);
+    const sc = statusClass(p.status);
+    const atags = (p.areas || []).map(a => `<span class="area-tag">${a}</span>`).join('');
+    const mp = (p.members || []).map(m => m.name).join(', ');
+    return `<div class="project-card" onclick="showDetail(${idx})">
+      <span class="badge-type type-${tc}">${p.type}</span>
+      <div class="pcard-title">${esc(p.name)}</div>
+      <div>
+        <span class="badge-status s-${sc}">${statusLabel(p.status)}</span>
+        ${p.semester ? `<span class="semester-badge">📅 ${p.semester}</span>` : ''}
+      </div>
+      <div class="area-tags">${atags}</div>
+      <div class="pcard-meta">👤 ${esc(p.client)} &nbsp;⏱️ ${esc(p.duration)}</div>
+      ${mp ? `<div class="pcard-members">👥 ${esc(mp)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function filterProjects() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const tf  = document.getElementById('typeFilter').value;
+  const af  = document.getElementById('areaFilter').value;
+  const sf  = document.getElementById('statusFilter').value;
+  const smf = document.getElementById('semFilter').value;
+  return allProjects.filter(p => {
+    const mp = (p.members || []).map(m => m.name.toLowerCase()).join(' ');
+    const ms = !search || [p.name, p.client, p.leader, mp].join(' ').toLowerCase().includes(search);
+    const mt = tf === 'all' || p.type === tf;
+    const ma = af === 'all' || (p.areas || []).includes(af);
+    const mst = sf === 'all' || p.status === sf;
+    const msm = smf === 'all' || (p.semester || '') === smf;
+    return ms && mt && ma && mst && msm;
+  });
+}
+
+function updateStats() { /* stats now only in dashboard */ }
+
+// ══════════════════════════════════════
+// DETAIL MODAL
+// ══════════════════════════════════════
+function showDetail(idx) {
+  const p = allProjects[idx];
+  const atags = (p.areas || []).map(a => `<span class="area-tag" style="font-size:.82em;padding:3px 10px">${a}</span>`).join('');
+  const mchips = (p.members || []).length
+    ? `<div class="members-chips">${(p.members || []).map(m => `<span class="mchip">${esc(m.name)} <small>· ${esc(m.role)}</small></span>`).join('')}</div>`
+    : '<span class="no-fb">Sin miembros registrados.</span>';
+  const fb = p.feedback ? `<div class="feedback-box">💬 ${esc(p.feedback)}</div>` : '<span class="no-fb">Sin feedback registrado.</span>';
+  document.getElementById('detailContent').innerHTML = `
+    <h2>${esc(p.name)}</h2>
+    <div class="modal-badges">
+      <span class="mbadge type-${typeClass(p.type)}">${p.type}</span>
+      <span class="mbadge" style="background:${statusColor(p.status)}">${statusLabel(p.status)}</span>
+      ${p.semester ? `<span class="mbadge" style="background:#5b21b6">📅 ${p.semester}</span>` : ''}
+    </div>
+    <div class="area-tags" style="margin-bottom:12px">${atags}</div>
+    <div class="detail-grid">
+      <div class="ds"><h4>👨‍💼 Líder</h4><p>${esc(p.leader)}</p></div>
+      <div class="ds"><h4>👤 Cliente</h4><p>${esc(p.client)}${p.clientType ? ` <span style="background:#ede9fe;color:#5b21b6;padding:1px 7px;border-radius:8px;font-size:.8em;font-weight:600;margin-left:5px">${p.clientType}</span>` : ''}</p></div>
+      <div class="ds"><h4>⏱️ Duración</h4><p>${esc(p.duration)}</p></div>
+      <div class="ds"><h4>📅 Semestre</h4><p>${p.semester || '—'}</p></div>
+      <div class="ds full"><h4>👥 Equipo</h4>${mchips}</div>
+      <div class="ds full"><h4>📝 Descripción</h4><p>${esc(p.shortDesc)}</p></div>
+      <div class="ds full"><h4>❗ Problema Inicial</h4><p>${esc(p.problem)}</p></div>
+      <div class="ds full"><h4>✅ Nuestra Solución</h4><p>${esc(p.solution)}</p></div>
+      <div class="ds full"><h4>💬 Feedback del Cliente</h4>${fb}</div>
+      <div class="ds full"><h4>🔗 Constancia</h4>${renderLinks(p.link)}</div>
+    </div>
+    <div style="margin-top:14px;text-align:right">
+      <button class="btn-sm" onclick="openEditModal(${idx})">✏️ Editar proyecto</button>
+    </div>`;
+  document.getElementById('detailModal').style.display = 'block';
+}
+
+// ══════════════════════════════════════
+// ADD PROJECT
+// ══════════════════════════════════════
+function openAddModal() {
+  addTempMembers = [];
+  document.getElementById('addProjectForm').reset();
+  document.querySelectorAll('#a-areas .acbl').forEach(l => { l.classList.remove('ck'); l.querySelector('input').checked = false; });
+  document.getElementById('a-mlist').innerHTML = '';
+  document.getElementById('addModal').style.display = 'block';
+}
+function tgA(label) { setTimeout(() => { label.classList.toggle('ck', label.querySelector('input').checked); }, 0); }
+
+function addMember(nameId, roleId, listId, ctx) {
+  const name = document.getElementById(nameId).value.trim();
+  const role = document.getElementById(roleId).value;
+  if (!name) return;
+  if (ctx === 'add') addTempMembers.push({name, role});
+  else editTempMembers.push({name, role});
+  document.getElementById(nameId).value = '';
+  renderMemberList(listId, ctx === 'add' ? addTempMembers : editTempMembers, ctx);
+}
+function renderMemberList(listId, arr, ctx) {
+  document.getElementById(listId).innerHTML = arr.map((m, i) =>
+    `<span class="mchip-rm">${esc(m.name)} · ${esc(m.role)} <span class="x" onclick="removeMI(${i},'${listId}','${ctx}')">✕</span></span>`).join('');
+}
+function removeMI(i, listId, ctx) {
+  if (ctx === 'add') { addTempMembers.splice(i, 1); renderMemberList(listId, addTempMembers, ctx); }
+  else { editTempMembers.splice(i, 1); renderMemberList(listId, editTempMembers, ctx); }
+}
+function getCheckedAreas(cid) {
+  return [...document.querySelectorAll(`#${cid} input[type=checkbox]:checked`)].map(c => c.value);
+}
+
+document.getElementById('addProjectForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const areas = getCheckedAreas('a-areas');
+  if (!areas.length) { alert('Selecciona al menos un área.'); return; }
+  const p = {
+    name: v('a-name'), type: v('a-type'), status: v('a-status'), semester: v('a-semester'),
+    leader: v('a-leader'), client: v('a-client'), clientType: v('a-clienttype') || '',
+    duration: v('a-duration'), areas, members: [...addTempMembers],
+    shortDesc: v('a-desc'), problem: v('a-prob'), solution: v('a-sol'),
+    feedback: v('a-fb') || null, link: v('a-link') || null
+  };
+  try {
+    const rows = await insertProject(p);
+    p._id = rows[0].id;
+    allProjects.push(p);
+    allProjects.sort((a,b) => a.name.localeCompare(b.name, 'es'));
+    populateSemFilters(); renderProjects(); updateStats();
+    closeModal('addModal'); alert('✅ Proyecto agregado!');
+  } catch(err) { alert('❌ Error al guardar: ' + err.message); }
+});
+
+// ══════════════════════════════════════
+// EDIT PROJECT
+// ══════════════════════════════════════
+function openEditModal(idx) {
+  currentEditIdx = idx;
+  document.getElementById('editPw').value = '';
+  document.getElementById('editFormWrap').style.display = 'none';
+  document.getElementById('editModal').style.display = 'block';
+}
+function unlockEdit() {
+  if (document.getElementById('editPw').value !== TCA_PW) { alert('❌ Contraseña incorrecta.'); return; }
+  const p = allProjects[currentEditIdx];
+  editTempMembers = [...(p.members || [])];
+  const areaChecks = AREAS_ALL.map(a =>
+    `<label class="acbl ${(p.areas||[]).includes(a)?'ck':''}" onclick="tgA(this)"><input type="checkbox" value="${a}" ${(p.areas||[]).includes(a)?'checked':''}>${a}</label>`).join('');
+  const mListHtml = editTempMembers.map((m, i) =>
+    `<span class="mchip-rm">${esc(m.name)} · ${esc(m.role)} <span class="x" onclick="removeMI(${i},'e-mlist','edit')">✕</span></span>`).join('');
+  document.getElementById('editFormWrap').style.display = 'block';
+  document.getElementById('editProjectForm').innerHTML = `
+    <div class="frow">
+      <div class="fgroup"><label>Nombre</label><input type="text" id="e-name" value="${esc(p.name)}"></div>
+      <div class="fgroup"><label>Tipo</label><select id="e-type">${['De paga','Pro bono','Interno','Training Project'].map(t=>`<option${p.type===t?' selected':''}>${t}</option>`).join('')}</select></div>
+    </div>
+    <div class="frow">
+      <div class="fgroup"><label>Estado</label><select id="e-status">${['Terminado','En pausa'].map(s=>`<option${p.status===s?' selected':''}>${s}</option>`).join('')}</select></div>
+      <div class="fgroup"><label>Semestre</label><input type="text" id="e-semester" value="${esc(p.semester||'')}"></div>
+    </div>
+    <div class="frow">
+      <div class="fgroup"><label>Líder</label><input type="text" id="e-leader" value="${esc(p.leader)}"></div>
+      <div class="fgroup"><label>Cliente</label><input type="text" id="e-client" value="${esc(p.client)}"></div>
+    </div>
+    <div class="frow">
+      <div class="fgroup"><label>Tipo de cliente</label>
+        <select id="e-clienttype">
+          <option value="" ${!p.clientType?'selected':''}>Sin clasificar</option>
+          ${['Empresa','ONG','Institución','TCA'].map(t=>`<option value="${t}" ${p.clientType===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+      </div>
+      <div class="fgroup"><label>Duración</label><input type="text" id="e-duration" value="${esc(p.duration)}"></div>
+    </div>
+    <div class="fgroup"><label>Áreas</label><div class="areas-cb" id="e-areas">${areaChecks}</div></div>
+    <div class="fgroup"><label>Miembros</label>
+      <div style="border:2px solid var(--gl);border-radius:7px;padding:9px">
+        <div class="madd-row">
+          <div class="ac-wrap" style="flex:1;position:relative">
+            <input type="text" id="e-mname" placeholder="Nombre…" autocomplete="off" oninput="showAC('e-mname','e-ac')">
+            <div class="ac-list" id="e-ac" style="display:none"></div>
+          </div>
+          <select id="e-mrole"><option>Miembro</option><option>Líder</option><option>Co-líder</option></select>
+          <button type="button" class="btn-sm" onclick="addMember('e-mname','e-mrole','e-mlist','edit')">+</button>
+        </div>
+        <div id="e-mlist">${mListHtml}</div>
+      </div>
+    </div>
+    <div class="fgroup"><label>Descripción</label><textarea id="e-desc">${esc(p.shortDesc||'')}</textarea></div>
+    <div class="fgroup"><label>Problema</label><textarea id="e-prob">${esc(p.problem||'')}</textarea></div>
+    <div class="fgroup"><label>Solución</label><textarea id="e-sol">${esc(p.solution||'')}</textarea></div>
+    <div class="fgroup"><label>💬 Feedback</label><textarea id="e-fb">${esc(p.feedback||'')}</textarea></div>
+    <div class="fgroup"><label>🔗 Constancia / URL</label>
+      <input type="text" id="e-link" value="${esc(p.link||'')}">
+      <div class="fhint">Múltiples links separados por punto y coma (;)</div>
+    </div>
+    <button type="button" class="btn-submit" onclick="saveEdit()">💾 Guardar cambios</button>
+    <button type="button" class="btn-submit btn-danger" style="margin-top:7px" onclick="deleteProject(${currentEditIdx})">🗑️ Eliminar proyecto</button>`;
+}
+
+async function saveEdit() {
+  const areas = getCheckedAreas('e-areas');
+  if (!areas.length) { alert('Selecciona al menos un área.'); return; }
+  const p = allProjects[currentEditIdx];
+  const updated = {
+    ...p,
+    name: v('e-name'), type: v('e-type'), status: v('e-status'), semester: v('e-semester'),
+    leader: v('e-leader'), client: v('e-client'), clientType: v('e-clienttype') || '',
+    duration: v('e-duration'), areas, members: [...editTempMembers],
+    shortDesc: v('e-desc'), problem: v('e-prob'), solution: v('e-sol'),
+    feedback: v('e-fb') || null, link: v('e-link') || null
+  };
+  try {
+    await updateProject(p._id, updated);
+    allProjects[currentEditIdx] = updated;
+    allProjects.sort((a,b) => a.name.localeCompare(b.name, 'es'));
+    populateSemFilters(); renderProjects(); updateStats();
+    closeModal('editModal'); closeModal('detailModal'); alert('✅ Proyecto actualizado!');
+  } catch(err) { alert('❌ Error al actualizar: ' + err.message); }
+}
+
+async function deleteProject(idx) {
+  if (!confirm('¿Eliminar este proyecto?')) return;
+  const p = allProjects[idx];
+  try {
+    await deleteProjectDB(p._id);
+    allProjects.splice(idx, 1);
+    populateSemFilters(); renderProjects(); updateStats();
+    closeModal('editModal'); closeModal('detailModal');
+  } catch(err) { alert('❌ Error al eliminar: ' + err.message); }
+}
+
+// ══════════════════════════════════════
+// AUTOCOMPLETE
+// ══════════════════════════════════════
+function showAC(inputId, acId) {
+  const input = document.getElementById(inputId);
+  const ac = document.getElementById(acId);
+  const q = input.value.trim().toLowerCase();
+  if (!q) { ac.style.display = 'none'; return; }
+  const names = [...new Set(allMembers.map(m => `${m.nombre} ${m.apellido}`))];
+  const matches = names.filter(n => n.toLowerCase().includes(q)).slice(0, 6);
+  if (!matches.length) { ac.style.display = 'none'; return; }
+  ac.innerHTML = matches.map(n => `<div class="ac-item" onclick="selectAC('${inputId}','${acId}','${n.replace(/'/g,"\\'")}')">${n}</div>`).join('');
+  ac.style.display = 'block';
+}
+function selectAC(inputId, acId, name) {
+  document.getElementById(inputId).value = name;
+  document.getElementById(acId).style.display = 'none';
+}
+document.addEventListener('click', e => {
+  document.querySelectorAll('.ac-list').forEach(ac => { if (!ac.contains(e.target)) ac.style.display = 'none'; });
+});
+
+// ══════════════════════════════════════
+// RENDER MEMBERS — sorted alphabetically by apellido, nombre
+// ══════════════════════════════════════
+function renderMembers() {
+  const search = document.getElementById('memberSearch').value.toLowerCase();
+  const sf  = document.getElementById('memberSemFilter').value;
+  const msf = document.getElementById('memberStatusFilter').value;
+  const filtered = allMembers
+    .filter(m => {
+      const ms = !search || `${m.nombre} ${m.apellido} ${m.universidad} ${m.career||''}`.toLowerCase().includes(search);
+      const mf  = sf === 'all' || m.semester === sf;
+      const mst = msf === 'all' || (msf === 'alumni' && m.memberStatus === 'alumni') || (msf === 'active' && m.memberStatus !== 'alumni');
+      return ms && mf && mst;
+    })
+    .sort((a,b) => {
+      const ka = `${a.apellido} ${a.nombre}`.toLowerCase();
+      const kb = `${b.apellido} ${b.nombre}`.toLowerCase();
+      return ka < kb ? -1 : ka > kb ? 1 : 0;
+    });
+  const grid = document.getElementById('membersGrid');
+  if (!filtered.length) { grid.innerHTML = '<div class="no-results"><h3>No se encontraron miembros</h3></div>'; return; }
+  grid.innerHTML = filtered.map(m => {
+    const idx = allMembers.indexOf(m);
+    const initials = getInitials(m.nombre, m.apellido);
+    const av = m.photo
+      ? `<img src="${m.photo}" alt="${initials}" onerror="this.style.display='none';this.parentElement.textContent='${initials}'">`
+      : initials;
+    const isAlumni = m.memberStatus === 'alumni';
+    const bioShort = m.bio ? (m.bio.length > 70 ? m.bio.substring(0,70) + '…' : m.bio) : '';
+    return `<div class="member-card" onclick="showMemberProfile(${idx})">
+      ${isAlumni ? '<div class="alumni-ribbon">ALUMNI</div>' : ''}
+      <div class="member-avatar">${av}</div>
+      <div class="member-name">${esc(m.nombre)} ${esc(m.apellido)}</div>
+      <span class="member-status-badge ${isAlumni ? 'badge-alumni' : 'badge-active'}">${isAlumni ? '🎓 Alumni' : '✅ Activo'}</span>
+      <div class="member-uni">🎓 ${esc(m.universidad)}</div>
+      ${m.career ? `<div class="member-career">📚 ${esc(m.career)}</div>` : ''}
+      <span class="member-sem">📅 ${m.semester}</span>
+      ${bioShort ? `<div class="member-bio">${esc(bioShort)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function getInitials(n, a) { return ((n||'').charAt(0) + (a||'').charAt(0)).toUpperCase(); }
+
+function showMemberProfile(idx) {
+  currentMemberIdx = idx;
+  const m = allMembers[idx];
+  const initials = getInitials(m.nombre, m.apellido);
+  const av = m.photo
+    ? `<img src="${m.photo}" alt="${initials}" onerror="this.style.display='none';this.parentElement.textContent='${initials}'">`
+    : initials;
+  const isAlumni = m.memberStatus === 'alumni';
+  const expHtml = (m.experience||[]).length
+    ? `<div class="section-exp">${m.experience.map(e => `<div class="exp-card"><p>${esc(e.desc||e.title||'')}</p></div>`).join('')}</div>`
+    : '<span class="no-fb">Sin experiencia registrada aún.</span>';
+  const myProj = allProjects.filter(p => (p.members||[]).some(mb => {
+    const full = `${m.nombre} ${m.apellido}`.toLowerCase();
+    return mb.name.toLowerCase().includes(m.nombre.toLowerCase()) || full.includes(mb.name.toLowerCase()) || mb.name.toLowerCase().includes(m.apellido.toLowerCase());
+  }));
+  const projHtml = myProj.length
+    ? myProj.map(p => `<span class="area-tag" style="font-size:.8em;padding:3px 10px;margin:2px">📁 ${esc(p.name)}</span>`).join('')
+    : '<span class="no-fb">Sin proyectos registrados.</span>';
+  document.getElementById('memberContent').innerHTML = `
+    <div class="profile-header">
+      <div class="profile-avatar-lg">${av}</div>
+      <div class="profile-info">
+        <h2>${esc(m.nombre)} ${esc(m.apellido)}</h2>
+        <div style="margin-top:4px">
+          ${isAlumni ? '<span class="profile-tag alumni-tag">🎓 Alumni</span>' : '<span class="profile-tag" style="background:#dcfce7;color:#166534">✅ Activo</span>'}
+          <span class="profile-tag">🎓 ${esc(m.universidad)}</span>
+          ${m.career ? `<span class="profile-tag">📚 ${esc(m.career)}</span>` : ''}
+          <span class="profile-tag">📅 ${m.semester}</span>
+        </div>
+        <div style="color:var(--gd);font-size:.83em;margin-top:6px">
+          ${m.correo ? `✉️ ${esc(m.correo)}<br>` : ''}
+          ${m.celular ? `📱 ${esc(m.celular)}` : ''}
+        </div>
+        ${m.linkedin ? `<a href="${m.linkedin}" target="_blank" rel="noopener" class="linkedin-link">🔗 LinkedIn</a>` : ''}
+        ${m.bio ? `<p style="color:var(--gd);font-size:.86em;margin-top:8px;line-height:1.6">${esc(m.bio)}</p>` : ''}
+      </div>
+    </div>
+    <div class="ds full" style="margin-bottom:10px"><h4>💼 Experiencia</h4>${expHtml}</div>
+    <div class="ds full"><h4>📁 Proyectos participados</h4><div class="area-tags">${projHtml}</div></div>`;
+  document.getElementById('memberModal').style.display = 'block';
+}
+
+// ══════════════════════════════════════
+// EDIT MEMBER
+// ══════════════════════════════════════
+function openEditMember() {
+  document.getElementById('mEditPw').value = '';
+  document.getElementById('memberEditFormWrap').style.display = 'none';
+  document.getElementById('editMemberModal').style.display = 'block';
+}
+function unlockMemberEdit() {
+  if (document.getElementById('mEditPw').value !== TCA_PW) { alert('❌ Contraseña incorrecta.'); return; }
+  const m = allMembers[currentMemberIdx];
+  const expDesc = (m.experience && m.experience[0]) ? (m.experience[0].desc || '') : '';
+  document.getElementById('memberEditFormWrap').style.display = 'block';
+  document.getElementById('memberEditForm').innerHTML = `
+    <div class="frow">
+      <div class="fgroup"><label>Nombre(s) *</label><input type="text" id="me-nombre" value="${esc(m.nombre||'')}"></div>
+      <div class="fgroup"><label>Apellido(s) *</label><input type="text" id="me-apellido" value="${esc(m.apellido||'')}"></div>
+    </div>
+    <div class="frow">
+      <div class="fgroup"><label>Universidad</label><input type="text" id="me-uni" value="${esc(m.universidad||'')}"></div>
+      <div class="fgroup"><label>Semestre de ingreso</label><input type="text" id="me-semester" value="${esc(m.semester||'')}" placeholder="Ej: 1_2025"></div>
+    </div>
+    <div class="frow">
+      <div class="fgroup"><label>Correo</label><input type="email" id="me-correo" value="${esc(m.correo||'')}"></div>
+      <div class="fgroup"><label>Celular</label><input type="text" id="me-celular" value="${esc(m.celular||'')}"></div>
+    </div>
+    <div class="frow">
+      <div class="fgroup"><label>Estado</label><select id="me-status">
+        <option value="active" ${(m.memberStatus||'active')==='active'?'selected':''}>Activo</option>
+        <option value="alumni" ${m.memberStatus==='alumni'?'selected':''}>Alumni</option>
+      </select></div>
+      <div class="fgroup"><label>Carrera</label><input type="text" id="me-career" value="${esc(m.career||'')}"></div>
+    </div>
+    <div class="fgroup"><label>Foto (URL)</label><input type="text" id="me-photo" value="${esc(m.photo||'')}"></div>
+    <div class="fgroup"><label>LinkedIn URL</label><input type="url" id="me-linkedin" value="${esc(m.linkedin||'')}"></div>
+    <div class="fgroup"><label>Bio</label><textarea id="me-bio">${esc(m.bio||'')}</textarea></div>
+    <div class="fgroup"><label>Experiencia</label>
+      <textarea id="me-exp-desc" placeholder="Describe tu experiencia…" style="min-height:80px">${esc(expDesc)}</textarea>
+    </div>
+    <button type="button" class="btn-submit" onclick="saveMemberEdit()">💾 Guardar perfil</button>
+    <button type="button" class="btn-submit btn-danger" style="margin-top:7px" onclick="deleteMember(${currentMemberIdx})">🗑️ Eliminar miembro</button>`;
+  renderExpList('me');
+}
+
+async function saveMemberEdit() {
+  const m = allMembers[currentMemberIdx];
+  if (!v("me-nombre") || !v("me-apellido")) { alert("Nombre y apellido son obligatorios."); return; }
+  const updated = {
+    ...m,
+    nombre: v("me-nombre"), apellido: v("me-apellido"),
+    universidad: v("me-uni") || m.universidad, semester: v("me-semester") || m.semester,
+    correo: v("me-correo") || null, celular: v("me-celular") || null,
+    career: v("me-career"), photo: v("me-photo") || null,
+    linkedin: v("me-linkedin") || null, bio: v("me-bio") || null,
+    experience: v("me-exp-desc") ? [{desc: v("me-exp-desc")}] : [], memberStatus: v("me-status") || "active"
+  };
+  try {
+    await updateMember(m._id, updated);
+    allMembers[currentMemberIdx] = updated;
+    allMembers.sort((a,b) => {
+      const ka = `${a.apellido} ${a.nombre}`.toLowerCase();
+      const kb = `${b.apellido} ${b.nombre}`.toLowerCase();
+      return ka < kb ? -1 : ka > kb ? 1 : 0;
+    });
+    closeModal("editMemberModal"); closeModal("memberModal");
+    renderMembers(); alert("✅ Perfil actualizado!");
+  } catch(err) { alert("❌ Error: " + err.message); }
+}
+
+async function deleteMember(idx) {
+  const m = allMembers[idx];
+  if (!confirm(`¿Eliminar a ${m.nombre} ${m.apellido}?`)) return;
+  try {
+    await deleteMemberDB(m._id);
+    allMembers.splice(idx, 1);
+    closeModal('editMemberModal'); closeModal('memberModal');
+    populateSemFilters(); renderMembers(); alert('✅ Miembro eliminado.');
+  } catch(err) { alert('❌ Error: ' + err.message); }
+}
+
+// ══════════════════════════════════════
+// ADD MEMBER
+// ══════════════════════════════════════
+function openAddMemberModal() {
+  document.getElementById('addMemberForm').reset();
+  document.getElementById('addMemberModal').style.display = 'block';
+}
+document.getElementById('addMemberForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const nm = {
+    semester: v('nm-semester'), nombre: v('nm-nombre'), apellido: v('nm-apellido'),
+    correo: v('nm-correo'), celular: v('nm-celular'), universidad: v('nm-uni'),
+    career: v('nm-career'), photo: v('nm-photo') || null, linkedin: v('nm-linkedin') || null,
+    bio: v('nm-bio') || null, experience: v('nm-exp-desc') ? [{desc: v('nm-exp-desc')}] : [], interests: [],
+    memberStatus: v('nm-status') || 'active'
+  };
+  try {
+    const rows = await insertMember(nm);
+    nm._id = rows[0].id; nm.id = rows[0].id;
+    allMembers.push(nm);
+    allMembers.sort((a,b) => {
+      const ka = `${a.apellido} ${a.nombre}`.toLowerCase();
+      const kb = `${b.apellido} ${b.nombre}`.toLowerCase();
+      return ka < kb ? -1 : ka > kb ? 1 : 0;
+    });
+    populateSemFilters(); renderMembers();
+    closeModal('addMemberModal'); alert('✅ Miembro agregado!');
+  } catch(err) { alert('❌ Error: ' + err.message); }
+});
+
+// ══════════════════════════════════════
+// EXPERIENCE EDITOR
+// ══════════════════════════════════════
+function addExpItem(prefix) {
+  if (prefix === 'me') meEditExp.push({desc: ''});
+  else addNmExp.push({desc: ''});
+  renderExpList(prefix);
+}
+function removeExpItem(prefix, i) {
+  if (prefix === 'me') meEditExp.splice(i, 1);
+  else addNmExp.splice(i, 1);
+  renderExpList(prefix);
+}
+function renderExpList(prefix) {
+  const arr = prefix === 'me' ? meEditExp : addNmExp;
+  const listEl = document.getElementById(`${prefix}-exp-list`);
+  if (!listEl) return;
+  listEl.innerHTML = arr.map((e, i) => `
+    <div class="exp-item-form" style="padding-right:38px">
+      <button class="exp-rm" onclick="removeExpItem('${prefix}',${i})">✕</button>
+      <textarea placeholder="Describe esta experiencia…" onchange="updateExp('${prefix}',${i},'desc',this.value)"
+        style="min-height:60px;font-size:.87em;margin-bottom:0">${esc(e.desc||'')}</textarea>
+    </div>`).join('');
+}
+function updateExp(prefix, i, field, val) {
+  if (prefix === 'me') meEditExp[i][field] = val;
+  else addNmExp[i][field] = val;
+}
+
+// ══════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════
+function renderDashboard() {
+  const d = document.getElementById('dashboardContent');
+  const byType={}, byArea={}, byStatus={}, bySem={}, byUni={}, byClient={}, byClientType={};
+  allProjects.forEach(p => {
+    byType[p.type] = (byType[p.type]||0) + 1;
+    byStatus[p.status] = (byStatus[p.status]||0) + 1;
+    if (p.semester) bySem[p.semester] = (bySem[p.semester]||0) + 1;
+    (p.areas||[]).forEach(a => { byArea[a] = (byArea[a]||0) + 1; });
+    const c = p.client || '';
+    if (c && c.toLowerCase() !== 'tca la paz') byClient[c] = (byClient[c]||0) + 1;
+    const ct = p.clientType || 'Sin clasificar';
+    byClientType[ct] = (byClientType[ct]||0) + 1;
+  });
+  allMembers.forEach(m => { byUni[m.universidad] = (byUni[m.universidad]||0) + 1; });
+  const total  = allProjects.length || 1;
+  const totalM = allMembers.length;
+  const activeM= allMembers.filter(m => m.memberStatus !== 'alumni').length;
+  const alumniM= allMembers.filter(m => m.memberStatus === 'alumni').length;
+  const mArea = Math.max(1, ...Object.values(byArea));
+  const mUni  = Math.max(1, ...Object.values(byUni));
+  const barC  = {'Corporate Relations':'#8B1A4A','Marketing':'#1a7a4a','IT':'#1a4a7a','Finanzas':'#7a1a1a','Educativo':'#5a1a7a','Recursos Humanos':'#1a6a6a'};
+  const typeC = {'De paga':'#1a7a4a','TCA':'#8B1A4A','Pro bono':'#5a5a6e','Training Project':'#b45309'};
+  const bar = (label, n, max, color) =>
+    `<div class="bar-row"><span class="bar-label">${esc(label)}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/max*100)}%;background:${color}"><span>${n}</span></div></div></div>`;
+  d.innerHTML = `
+    <h2>📊 Dashboard del Portafolio TCA</h2>
+    <div class="kpi-row">
+      <div class="kpi-card"><div class="kpi-num">${total}</div><div class="kpi-lbl">TOTAL</div></div>
+      <div class="kpi-card"><div class="kpi-num">${byType['De paga']||0}</div><div class="kpi-lbl">DE PAGA</div></div>
+      <div class="kpi-card"><div class="kpi-num">${byType['Pro bono']||0}</div><div class="kpi-lbl">PRO BONO</div></div>
+      <div class="kpi-card"><div class="kpi-num">${byType['Interno']||0}</div><div class="kpi-lbl">INTERNOS</div></div>
+      <div class="kpi-card"><div class="kpi-num">${byType['Training Project']||0}</div><div class="kpi-lbl">TRAINING</div></div>
+      <div class="kpi-card"><div class="kpi-num">${byStatus['En pausa']||0}</div><div class="kpi-lbl">EN PAUSA</div></div>
+      <div class="kpi-card"><div class="kpi-num">${totalM}</div><div class="kpi-lbl">MIEMBROS</div></div>
+      <div class="kpi-card"><div class="kpi-num">${activeM}</div><div class="kpi-lbl">ACTIVOS</div></div>
+      <div class="kpi-card"><div class="kpi-num">${alumniM}</div><div class="kpi-lbl">ALUMNI</div></div>
+    </div>
+    <div class="dash-grid">
+      <div class="dash-chart">
+        <h4>📂 Proyectos por Área</h4>
+        ${Object.entries(byArea).sort((a,b)=>b[1]-a[1]).map(([a,n])=>bar(a,n,mArea,barC[a]||'#7B2D77')).join('')}
+      </div>
+      <div class="dash-chart">
+        <h4>🏷️ Proyectos por Tipo</h4>
+        ${Object.entries(byType).map(([t,n])=>bar(t,n,total,typeC[t]||'#7B2D77')).join('')}
+        <hr class="sep">
+        <h4>🔄 Por Estado</h4>
+        ${Object.entries(byStatus).map(([s,n])=>bar(s,n,total,statusColor(s))).join('')}
+      </div>
+      <div class="dash-chart">
+        <h4>📅 Proyectos por Semestre</h4>
+        ${Object.entries(bySem).sort().map(([s,n])=>bar(s,n,total,'var(--pl)')).join('')}
+      </div>
+      <div class="dash-chart">
+        <h4>🎓 Miembros por Universidad</h4>
+        ${Object.entries(byUni).sort((a,b)=>b[1]-a[1]).map(([u,n])=>bar(u,n,mUni,'var(--p)')).join('')}
+      </div>
+      <div class="dash-chart">
+        <h4>🏢 Tipo de Cliente</h4>
+        ${['Empresa','ONG','Institución','TCA','Sin clasificar'].map(ct=>{
+          const n=byClientType[ct]||0; if(!n)return'';
+          const cols={'Empresa':'#10b981','ONG':'#3b82f6','Institución':'#8b5cf6','TCA':'#8B1A4A','Sin clasificar':'#9B9B9B'};
+          return bar(ct,n,total,cols[ct]||'#9B9B9B');
+        }).join('')}
+      </div>
+      <div class="dash-chart" style="grid-column:1/-1">
+        <h4>🤝 Clientes / Organizaciones atendidas</h4>
+        <div class="client-chips">
+          ${Object.keys(byClient).sort().map(c=>`<span class="client-chip">🏢 ${esc(c)}</span>`).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+// ══════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+window.onclick = e => { if (e.target.classList.contains('modal')) e.target.style.display = 'none'; };
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function v(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+// Event listeners for filters
+['searchInput','typeFilter','areaFilter','statusFilter','semFilter'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) { el.addEventListener('change', renderProjects); el.addEventListener('input', renderProjects); }
+});
+['memberSearch','memberSemFilter','memberStatusFilter'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) { el.addEventListener('change', renderMembers); el.addEventListener('input', renderMembers); }
+});
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+async function init() {
+  try {
+    [allProjects, allMembers] = await Promise.all([loadProjects(), loadMembers()]);
+    populateSemFilters();
+    renderProjects();
+    updateStats();
+  } catch(err) {
+    // Show error banners
+    const ep = document.getElementById('error-proj');
+    const em = document.getElementById('error-mem');
+    const msg = 'No se pudo conectar con Supabase. Verifica tu conexión o las credenciales. (' + err.message + ')';
+    if (ep) { ep.querySelector('#error-proj-msg').textContent = msg; ep.classList.add('show'); }
+    if (em) { em.querySelector('#error-mem-msg').textContent = msg; em.classList.add('show'); }
+    document.getElementById('projectsGrid').innerHTML = '<div class="no-results"><h3>Sin datos disponibles</h3></div>';
+    document.getElementById('membersGrid').innerHTML  = '<div class="no-results"><h3>Sin datos disponibles</h3></div>';
+  }
+}
+init();
+</script>
+</body>
+</html>
