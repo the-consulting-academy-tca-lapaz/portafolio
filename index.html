@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Portafolio TCA La Paz</title>
 <link rel="stylesheet" href="styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="container">
@@ -49,6 +52,13 @@
     <label>Semestre:</label>
     <select id="semFilter"><option value="all">Todos</option></select>
     <button class="btn-add" onclick="openAddModal()">+ Agregar Proyecto</button>
+    <div class="export-wrap" id="exportWrap">
+      <button class="btn-pdf" id="btnExport" onclick="toggleExportMenu(event)">⬇ Exportar <span class="exp-arrow">▾</span></button>
+      <div class="export-menu" id="exportMenu">
+        <button onclick="closeExportMenu(); exportProjectsPDF()">📄 Exportar PDF</button>
+        <button onclick="closeExportMenu(); exportProjectsXLSX()">📊 Exportar Excel</button>
+      </div>
+    </div>
   </div>
 
   <div id="error-proj" class="error-banner">⚠️ <span id="error-proj-msg"></span></div>
@@ -1036,6 +1046,351 @@ async function init() {
   }
 }
 init();
+
+// ══════════════════════════════════════
+// PDF EXPORT — UN SOLO PDF, TABLA COMPLETA
+// ══════════════════════════════════════
+async function exportProjectsPDF() {
+  const btn = document.getElementById('btnExport');
+  btn.textContent = '⏳ Generando…';
+  btn.disabled = true;
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const LOGO_URL = 'https://ik.imagekit.io/am3aa3uiq/TCA.png?updatedAt=1771392919844';
+    const fecha = new Date().toLocaleDateString('es-BO', {
+      day: '2-digit', month: 'long', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    // Load logo and detect its real dimensions to avoid stretching
+    let logoBase64 = null;
+    let logoW = 20, logoH = 20; // default square
+    try {
+      const resp = await fetch(LOGO_URL);
+      const blob = await resp.blob();
+      logoBase64 = await new Promise(res => {
+        const r = new FileReader();
+        r.onload = () => res(r.result);
+        r.readAsDataURL(blob);
+      });
+      // detect real pixel size via Image element
+      await new Promise(res => {
+        const img = new Image();
+        img.onload = () => {
+          const ratio = img.naturalWidth / img.naturalHeight;
+          logoH = 14; // fixed height in mm
+          logoW = logoH * ratio; // width keeps aspect ratio
+          res();
+        };
+        img.onerror = res;
+        img.src = logoBase64;
+      });
+    } catch(e) { /* logo optional */ }
+
+    // Oficio (Legal) landscape: 355.6 x 215.9 mm → usable width ~335mm
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [355.6, 215.9] });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+
+    // ── HEADER (fondo blanco con borde guindo abajo) ──
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 0, pageW, 30, 'F');
+    doc.setDrawColor(139, 26, 74);
+    doc.setLineWidth(0.8);
+    doc.line(0, 30, pageW, 30);
+
+    // Logo a la izquierda, bien proporcionado
+    if (logoBase64) {
+      try {
+        const logoX = 10;
+        const logoY = (30 - logoH) / 2;
+        doc.addImage(logoBase64, 'PNG', logoX, logoY, logoW, logoH);
+      } catch(e) {}
+    }
+
+    // Título centrado
+    doc.setTextColor(107, 18, 56);
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.text('THE CONSULTING ACADEMY', pageW / 2, 11, { align: 'center' });
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text('La Paz, Bolivia — Portafolio de Proyectos', pageW / 2, 17, { align: 'center' });
+
+    // Total + fecha a la derecha
+    doc.setFontSize(7.5);
+    doc.setTextColor(139, 26, 74);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Total: ' + allProjects.length + ' proyectos', pageW - 10, 14, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.setFontSize(7);
+    doc.text('Impreso: ' + fecha, pageW - 10, 20, { align: 'right' });
+
+    // ── TABLA COMPLETA ──
+    const sorted = [...allProjects].sort((a, b) =>
+      a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+    );
+
+    const rows = sorted.map((p, i) => [
+      i + 1,
+      p.name || '—',
+      p.type || '—',
+      p.status || '—',
+      p.semester || '—',
+      p.leader || '—',
+      p.client || '—',
+      p.clientType || '—',
+      (p.areas || []).join('\n') || '—',
+      p.duration || '—',
+      p.shortDesc || '—',
+      p.problem || '—',
+      p.solution || '—',
+      p.feedback || '—',
+      p.link || '—',
+      (p.members || []).map(m => m.name + ' (' + m.role + ')').join('\n') || '—'
+    ]);
+
+    // Oficio landscape usable width: 355.6 - 2*10 = 335.6mm
+    // Column widths sum: 6+34+16+14+12+21+23+14+19+13+36+32+32+19+17+25 = 333mm fits perfectly
+    doc.autoTable({
+      startY: 34,
+      margin: { left: 10, right: 10 },
+      tableWidth: 335.6,
+      head: [[
+        '#', 'Proyecto', 'Tipo', 'Estado', 'Semestre',
+        'Líder', 'Cliente', 'T. Cliente', 'Áreas', 'Duración',
+        'Descripción', 'Problema', 'Solución', 'Feedback', 'Constancia', 'Equipo'
+      ]],
+      body: rows,
+      styles: {
+        fontSize: 5.8,
+        cellPadding: 1.8,
+        overflow: 'linebreak',
+        valign: 'top',
+        textColor: [40, 40, 40],
+        lineColor: [220, 215, 218],
+        lineWidth: 0.15,
+        fillColor: [255, 255, 255]
+      },
+      headStyles: {
+        fillColor: [139, 26, 74],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 6,
+        cellPadding: 2.2,
+        halign: 'center'
+      },
+      alternateRowStyles: {
+        fillColor: [250, 246, 248]
+      },
+      columnStyles: {
+        0:  { cellWidth: 6,  halign: 'center', fontStyle: 'bold' },
+        1:  { cellWidth: 34 },
+        2:  { cellWidth: 16 },
+        3:  { cellWidth: 14 },
+        4:  { cellWidth: 12 },
+        5:  { cellWidth: 21 },
+        6:  { cellWidth: 23 },
+        7:  { cellWidth: 14 },
+        8:  { cellWidth: 19 },
+        9:  { cellWidth: 13 },
+        10: { cellWidth: 36 },
+        11: { cellWidth: 32 },
+        12: { cellWidth: 32 },
+        13: { cellWidth: 19 },
+        14: { cellWidth: 17 },
+        15: { cellWidth: 25 }
+      },
+      didDrawPage: (data) => {
+        // Footer en cada página
+        const pg = data.pageNumber;
+        const total = doc.internal.getNumberOfPages();
+        doc.setDrawColor(139, 26, 74);
+        doc.setLineWidth(0.5);
+        doc.line(10, pageH - 9, pageW - 10, pageH - 9);
+        doc.setFontSize(6.5);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(139, 26, 74);
+        doc.text('TCA La Paz — Portafolio de Proyectos — ' + fecha, 12, pageH - 5);
+        doc.setTextColor(100, 100, 100);
+        doc.text('Pág. ' + pg + ' / ' + total, pageW - 12, pageH - 5, { align: 'right' });
+      }
+    });
+
+    doc.save('TCA_Portafolio_' + new Date().toISOString().slice(0, 10) + '.pdf');
+
+  } finally {
+    btn.innerHTML = '📄 Exportar PDF';
+    btn.disabled = false;
+  }
+}
+
+// ══════════════════════════════════════
+// EXPORT MENU TOGGLE
+// ══════════════════════════════════════
+function toggleExportMenu(e) {
+  e.stopPropagation();
+  const menu = document.getElementById('exportMenu');
+  menu.classList.toggle('open');
+}
+function closeExportMenu() {
+  document.getElementById('exportMenu').classList.remove('open');
+}
+document.addEventListener('click', function(e) {
+  const wrap = document.getElementById('exportWrap');
+  if (wrap && !wrap.contains(e.target)) closeExportMenu();
+});
+
+// ══════════════════════════════════════
+// XLSX EXPORT
+// ══════════════════════════════════════
+function exportProjectsXLSX() {
+  const btn = document.getElementById('btnExport');
+  const originalHTML = btn.innerHTML;
+  btn.innerHTML = '⏳ Generando…';
+  btn.disabled = true;
+
+  try {
+    const sorted = [...allProjects].sort((a, b) =>
+      a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+    );
+
+    const headers = [
+      '#', 'Proyecto', 'Tipo', 'Estado', 'Semestre',
+      'Líder', 'Cliente', 'Tipo Cliente', 'Áreas', 'Duración',
+      'Descripción', 'Problema', 'Solución', 'Feedback', 'Constancia', 'Equipo'
+    ];
+
+    const rows = sorted.map((p, i) => [
+      i + 1,
+      p.name || '',
+      p.type || '',
+      p.status || '',
+      p.semester || '',
+      p.leader || '',
+      p.client || '',
+      p.clientType || '',
+      (p.areas || []).join(', ') || '',
+      p.duration || '',
+      p.shortDesc || '',
+      p.problem || '',
+      p.solution || '',
+      p.feedback || '',
+      p.link || '',
+      (p.members || []).map(m => m.name + ' (' + m.role + ')').join('; ') || ''
+    ]);
+
+    const wsData = [headers, ...rows];
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Column widths (in characters)
+    ws['!cols'] = [
+      {wch:4},  // #
+      {wch:40}, // Proyecto
+      {wch:16}, // Tipo
+      {wch:13}, // Estado
+      {wch:10}, // Semestre
+      {wch:22}, // Líder
+      {wch:25}, // Cliente
+      {wch:14}, // Tipo Cliente
+      {wch:30}, // Áreas
+      {wch:13}, // Duración
+      {wch:50}, // Descripción
+      {wch:45}, // Problema
+      {wch:45}, // Solución
+      {wch:30}, // Feedback
+      {wch:30}, // Constancia
+      {wch:40}  // Equipo
+    ];
+
+    // Style header row
+    const headerRange = XLSX.utils.decode_range(ws['!ref']);
+    const headerStyle = {
+      font: { bold: true, color: { rgb: 'FFFFFF' }, name: 'Arial', sz: 10 },
+      fill: { fgColor: { rgb: '8B1A4A' } },
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+      border: {
+        top:    { style: 'thin', color: { rgb: 'CCCCCC' } },
+        bottom: { style: 'thin', color: { rgb: 'CCCCCC' } },
+        left:   { style: 'thin', color: { rgb: 'CCCCCC' } },
+        right:  { style: 'thin', color: { rgb: 'CCCCCC' } }
+      }
+    };
+    const dataStyle = {
+      font: { name: 'Arial', sz: 9 },
+      alignment: { vertical: 'top', wrapText: true },
+      border: {
+        top:    { style: 'thin', color: { rgb: 'E0E0E0' } },
+        bottom: { style: 'thin', color: { rgb: 'E0E0E0' } },
+        left:   { style: 'thin', color: { rgb: 'E0E0E0' } },
+        right:  { style: 'thin', color: { rgb: 'E0E0E0' } }
+      }
+    };
+    const altRowStyle = {
+      ...dataStyle,
+      fill: { fgColor: { rgb: 'FAF6F8' } }
+    };
+
+    for (let C = headerRange.s.c; C <= headerRange.e.c; C++) {
+      const cellRef = XLSX.utils.encode_cell({ r: 0, c: C });
+      if (ws[cellRef]) ws[cellRef].s = headerStyle;
+    }
+
+    for (let R = 1; R <= rows.length; R++) {
+      for (let C = headerRange.s.c; C <= headerRange.e.c; C++) {
+        const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+        if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' };
+        ws[cellRef].s = R % 2 === 0 ? altRowStyle : dataStyle;
+      }
+    }
+
+    // Freeze header row
+    ws['!freeze'] = { xSplit: 0, ySplit: 1, topLeftCell: 'A2' };
+
+    // Auto-filter on header
+    ws['!autofilter'] = { ref: ws['!ref'] };
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Proyectos');
+
+    // Stats sheet
+    const statsData = [
+      ['RESUMEN — TCA La Paz Portafolio de Proyectos'],
+      ['Generado:', new Date().toLocaleDateString('es-BO', { day:'2-digit', month:'long', year:'numeric' })],
+      [],
+      ['Total de proyectos', allProjects.length],
+      [],
+      ['Por Tipo', 'Cantidad'],
+    ];
+    const byType = {};
+    allProjects.forEach(p => { byType[p.type||'Sin tipo'] = (byType[p.type||'Sin tipo']||0)+1; });
+    Object.entries(byType).sort((a,b)=>b[1]-a[1]).forEach(([k,v]) => statsData.push([k, v]));
+    statsData.push([]);
+    statsData.push(['Por Área', 'Cantidad']);
+    const byArea = {};
+    allProjects.forEach(p => (p.areas||[]).forEach(a => { byArea[a]=(byArea[a]||0)+1; }));
+    Object.entries(byArea).sort((a,b)=>b[1]-a[1]).forEach(([k,v]) => statsData.push([k, v]));
+    statsData.push([]);
+    statsData.push(['Por Semestre', 'Cantidad']);
+    const bySem = {};
+    allProjects.forEach(p => { if(p.semester) bySem[p.semester]=(bySem[p.semester]||0)+1; });
+    Object.entries(bySem).sort().forEach(([k,v]) => statsData.push([k, v]));
+
+    const wsStats = XLSX.utils.aoa_to_sheet(statsData);
+    wsStats['!cols'] = [{wch:28},{wch:14}];
+    XLSX.utils.book_append_sheet(wb, wsStats, 'Resumen');
+
+    const fecha = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, 'TCA_Portafolio_' + fecha + '.xlsx');
+  } finally {
+    btn.innerHTML = originalHTML;
+    btn.disabled = false;
+  }
+}
+
 </script>
 </body>
 </html>
