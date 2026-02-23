@@ -1196,8 +1196,24 @@ async function exportProjectsPDF() {
         13: { cellWidth: 19 },
         14: { cellWidth: 17 },
         15: { cellWidth: 25 }
+},
+      willDrawCell: (data) => {
+        if (data.section === 'body' && data.column.index === 14) {
+          const t = String(data.cell.raw || '').trim();
+          if (t.startsWith('http')) data.cell.styles.textColor = [0, 82, 204];
+        }
+      },
+      didDrawCell: (data) => {
+        if (data.section === 'body' && data.column.index === 14) {
+          const urls = String(data.cell.raw || '').split(';').map(u => u.trim()).filter(u => u.startsWith('http'));
+          if (urls.length > 0) {
+            const { x, y, width, height } = data.cell;
+            doc.link(x, y, width, height, { url: urls[0] });
+          }
+        }
       },
       didDrawPage: (data) => {
+          
         // Footer en cada página
         const pg = data.pageNumber;
         const total = doc.internal.getNumberOfPages();
