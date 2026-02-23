@@ -239,21 +239,3 @@ header .portfolio-label{display:block;color:var(--p);font-size:.82em;font-weight
 }
 .btn-pdf:hover{background:var(--p);color:#fff;box-shadow:0 4px 12px rgba(139,26,74,.25)}
 .btn-pdf:disabled{opacity:.6;cursor:not-allowed}
-
-/* EXPORT DROPDOWN */
-.export-wrap{position:relative;display:inline-flex}
-.exp-arrow{font-size:.75em;margin-left:2px;transition:transform .18s}
-.export-menu{
-  display:none;position:absolute;top:calc(100% + 5px);right:0;
-  background:#fff;border:1.5px solid var(--p);border-radius:8px;
-  box-shadow:0 8px 24px rgba(139,26,74,.18);z-index:300;min-width:170px;overflow:hidden;
-}
-.export-menu.open{display:block}
-.export-menu button{
-  display:flex;align-items:center;gap:8px;width:100%;padding:10px 16px;
-  background:none;border:none;text-align:left;cursor:pointer;font-size:.86em;
-  font-weight:600;color:var(--pd);font-family:inherit;transition:background .15s;
-}
-.export-menu button:hover{background:var(--pa);color:var(--p)}
-.export-menu button:not(:last-child){border-bottom:1px solid var(--gl)}
-
