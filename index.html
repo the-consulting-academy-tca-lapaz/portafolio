@@ -162,7 +162,7 @@
               <input type="text" id="a-mname" placeholder="Nombre del miembro…" autocomplete="off" oninput="showAC('a-mname','a-ac')">
               <div class="ac-list" id="a-ac" style="display:none"></div>
             </div>
-            <select id="a-mrole"><option>Miembro</option><option>Líder</option><option>Co-líder</option></select>
+            <select id="a-mrole"><option>Miembro</option><option>Líder</option><option>Co-líder</option><option>Project Controller</option></select>
             <button type="button" class="btn-sm" onclick="addMember('a-mname','a-mrole','a-mlist','add')">+</button>
           </div>
           <div id="a-mlist"></div>
@@ -626,7 +626,7 @@ function unlockEdit() {
             <input type="text" id="e-mname" placeholder="Nombre…" autocomplete="off" oninput="showAC('e-mname','e-ac')">
             <div class="ac-list" id="e-ac" style="display:none"></div>
           </div>
-          <select id="e-mrole"><option>Miembro</option><option>Líder</option><option>Co-líder</option></select>
+          <select id="e-mrole"><option>Miembro</option><option>Líder</option><option>Co-líder</option><option>Project Controller</option></select>
           <button type="button" class="btn-sm" onclick="addMember('e-mname','e-mrole','e-mlist','edit')">+</button>
         </div>
         <div id="e-mlist">${mListHtml}</div>
@@ -754,8 +754,10 @@ function showMemberProfile(idx) {
     ? `<div class="section-exp">${m.experience.map(e => `<div class="exp-card"><p>${esc(e.desc||e.title||'')}</p></div>`).join('')}</div>`
     : '<span class="no-fb">Sin experiencia registrada aún.</span>';
   const myProj = allProjects.filter(p => (p.members||[]).some(mb => {
-    const full = `${m.nombre} ${m.apellido}`.toLowerCase();
-    return mb.name.toLowerCase().includes(m.nombre.toLowerCase()) || full.includes(mb.name.toLowerCase()) || mb.name.toLowerCase().includes(m.apellido.toLowerCase());
+    const fullMember = `${m.nombre} ${m.apellido}`.toLowerCase();
+    const mbName = mb.name.toLowerCase();
+    return mbName === fullMember
+      || (mbName.includes(m.nombre.toLowerCase()) && mbName.includes(m.apellido.toLowerCase()));
   }));
   const projHtml = myProj.length
     ? myProj.map(p => `<span class="area-tag" style="font-size:.8em;padding:3px 10px;margin:2px">📁 ${esc(p.name)}</span>`).join('')
@@ -1196,24 +1198,8 @@ async function exportProjectsPDF() {
         13: { cellWidth: 19 },
         14: { cellWidth: 17 },
         15: { cellWidth: 25 }
-},
-      willDrawCell: (data) => {
-        if (data.section === 'body' && data.column.index === 14) {
-          const t = String(data.cell.raw || '').trim();
-          if (t.startsWith('http')) data.cell.styles.textColor = [0, 82, 204];
-        }
-      },
-      didDrawCell: (data) => {
-        if (data.section === 'body' && data.column.index === 14) {
-          const urls = String(data.cell.raw || '').split(';').map(u => u.trim()).filter(u => u.startsWith('http'));
-          if (urls.length > 0) {
-            const { x, y, width, height } = data.cell;
-            doc.link(x, y, width, height, { url: urls[0] });
-          }
-        }
       },
       didDrawPage: (data) => {
-          
         // Footer en cada página
         const pg = data.pageNumber;
         const total = doc.internal.getNumberOfPages();
